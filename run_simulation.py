@@ -3,19 +3,26 @@ import numpy as np
 from matplotlib import pyplot as plt
 import pylab
 
-locations = np.load('data/location10x10.npy') #np.load: returns arrays stored in this file
-adjacency_mat = np.load('data/adjacency_mat10x10.npy')
-colony = main.AntColony(locations, adjacency_mat, 0, 99, timesteps=100, decay=0.1)
-colony.run()
-print(colony.best_path)
-print(colony.best_path_dist)
 
-# pylab.title("Best Path ($n = " + str(n) + "$ steps)")
-# plt.plot(colony.locations[colony.best_path])
-# pylab.savefig("ant_colony_best_path"+str(n)+".png",bbox_inches="tight",dpi=600)
-# pylab.show()
+def run_simulation(filename_tail, plot=True):
+    locations = np.load(
+        'data/location' + filename_tail + '.npy')  # np.load: returns arrays stored in this file
+    adjacency_mat = np.load('data/adjacency_mat' + filename_tail + '.npy')
+    colony = main.AntColony(locations, adjacency_mat, 0, locations.shape[0] - 1,
+                            timesteps=1000, decay=0.1, n_ants=100)
+    colony.run()
+    print(colony.best_path)
+    print(colony.best_path_dist)
 
-for i in range(len(colony.best_path)):
-    plt.scatter(colony.locations[colony.best_path[i]][0],colony.locations[colony.best_path[i]][1])
-pylab.title("THE Best Path")
-plt.show()
+    if plot:
+        plt.plot(colony.locations[:, 0][colony.best_path],
+                 colony.locations[:, 1][colony.best_path])
+        plt.scatter(colony.locations[:, 0][colony.best_path],
+                    colony.locations[:, 1][colony.best_path])
+
+        pylab.title("THE Best Path")
+        plt.show()
+
+
+filename_tail = '10x10_maze1'
+run_simulation(filename_tail, plot=True)

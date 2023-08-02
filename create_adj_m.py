@@ -36,8 +36,7 @@ def get_adjacent(position, all_locations):
     return adjacent
 
 
-locations = create_locations((10, 10))
+locations = np.load('data/location10x10_maze1.npy')
 adjacency_mat = create_adjacency_mat(locations)
 
-np.save('data/location10x10.npy', locations)
-np.save('data/adjacency_mat10x10.npy', adjacency_mat)
+np.save('data/adjacency_mat10x10_maze1.npy', adjacency_mat)
