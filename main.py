@@ -80,8 +80,7 @@ class AntColony():
     def p_add(self, path):
         for r in range(len(path) - 1):
             self.pheromones[path[r], path[r + 1]] += 1.0
-            self.pheromones[path[r + 1], path[
-                r]] += 1.0  # update pheromones matrix row at every path int
+            self.pheromones[path[r + 1], path[r]] += 1.0  # update pheromones matrix row at every path int
 
     def get_path_distance(self, path):
         total_distance = 0

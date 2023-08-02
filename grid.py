@@ -1,17 +1,19 @@
 from tkinter import *
 import numpy as np
 import create_adj_m
-import run_simulation
+from run_simulation import run_simulation # careful when importing - make sure there aren't any lines of code that will run
 
-FILENAME_TAIL = '10x10_maze3'
 
 class Cell:
-    FILLED_COLOR_BG = "white" # locations that can go to
-    EMPTY_COLOR_BG = "black" # walls
+    FILLED_COLOR_BG = "white"  # locations that can go to
+    EMPTY_COLOR_BG = "black"  # walls
     FILLED_COLOR_BORDER = "black"
     EMPTY_COLOR_BORDER = "black"
-    START_COLOR_BG = "green"
-    END_COLOR_BG = "red"
+
+    START_COLOR_BG = 'green'
+    END_COLOR_BG = 'red'
+    SOL_COLOR_BG = "green"
+    SOL_COLOR_BORDER = "black"
 
     def __init__(self, master, x, y, size, start, end):
         """ Constructor of the object called by Cell(...) """
@@ -20,12 +22,27 @@ class Cell:
         self.ord = y
         self.size = size
         self.fill = True
-        self.start=start
-        self.end=end
+        self.start = start
+        self.end = end
 
     def switch(self):
         """ Switch if the cell is filled or not. """
         self.fill = not self.fill
+
+    def fill_solution(self):
+        fill = Cell.SOL_COLOR_BG
+        outline = Cell.SOL_COLOR_BORDER
+
+        if self.abs == self.end[0] and self.ord == self.end[1]:
+            fill = Cell.END_COLOR_BG
+            outline = Cell.FILLED_COLOR_BORDER
+        xmin = self.abs * self.size
+        xmax = xmin + self.size
+        ymin = self.ord * self.size
+        ymax = ymin + self.size
+
+        self.master.create_rectangle(xmin, ymin, xmax, ymax, fill=fill,
+                                     outline=outline)
 
     def draw(self):
         """ order to the cell to draw its representation on the canvas """
@@ -63,14 +80,15 @@ class CellGrid(Canvas):
 
         self.cellSize = cellSize
 
-        self.start = (0,0)
+        self.start = (0, 0)
         self.end = (rowNumber - 1, columnNumber - 1)
 
         self.grid = []
         for row in range(rowNumber):
             line = []
             for column in range(columnNumber):
-                line.append(Cell(self, column, row, cellSize, self.start, self.end))
+                line.append(
+                    Cell(self, column, row, cellSize, self.start, self.end))
 
             self.grid.append(line)
 
@@ -83,6 +101,10 @@ class CellGrid(Canvas):
         self.bind("<B1-Motion>", self.handleMouseMotion)
         # bind release button action - clear the memory of midified cells.
         self.bind("<ButtonRelease-1>", lambda event: self.switched.clear())
+
+        run_button = Button(self, text="Run Optimization", command=self.run_sim,anchor=W)
+        run_button.configure(width=10, activebackground="#33B5E5", relief=FLAT)
+        self.create_window(10, 10, anchor=NW, window=run_button)
 
         self.draw()
 
@@ -113,6 +135,19 @@ class CellGrid(Canvas):
             cell.draw()
             self.switched.append(cell)
 
+    def run_sim(self):
+        locations = []
+        for i in range(len(grid.grid)):
+            for j in range(len(grid.grid[i])):
+                if grid.grid[i][j].fill:
+                    locations.append([i, j])
+        locations = np.array(locations)
+        adj_mat = create_adj_m.create_adjacency_mat(locations)
+        # need to pass in locations and adj matrix
+        colony = run_simulation(locations, adj_mat)
+        for idx in colony.best_path:
+            loc = locations[idx]
+            self.grid[loc[0]][loc[1]].fill_solution()
 
 
 app = Tk()
@@ -126,16 +161,5 @@ grid.pack()
 
 app.mainloop()
 
-locations = []
-for i in range(len(grid.grid)):
-    for j in range(len(grid.grid[i])):
-        if grid.grid[i][j].fill:
-            locations.append([i, j])
 
-locations = np.array(locations)
-adjacency_mat = create_adj_m.create_adjacency_mat(locations)
 
-np.save('data/location'  + FILENAME_TAIL + '.npy', locations)
-np.save('data/adjacency_mat' + FILENAME_TAIL + '.npy', adjacency_mat)
-
-# run_simulation.run_simulation(FILENAME_TAIL, plot=False)
