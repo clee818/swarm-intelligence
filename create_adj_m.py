@@ -26,12 +26,12 @@ def get_adjacent(position, all_locations):
     adjacent = np.ones(all_locations.shape[0])
     for j in range(all_locations.shape[0]):
         position_compare = all_locations[j]
-        if position[0] == position_compare[0] and position[1] == \
-                position_compare[1]:  # one can't go to the position one is at
+        if position[0] == position_compare[0] and position[1] == position_compare[1]:  # one can't go to the position one is at
             adjacent[j] = 0
         if ((abs(position[x] - position_compare[x]) >= 2) or (
                 abs(position[y] - position_compare[y]) >= 2)):
-            # can't go to coordinate which with ones current location coordinates' difference is equal to or greater than 2
+            # can't go to coordinate which with ones current location
+            # coordinates' difference is equal to or greater than 2
             adjacent[j] = 0
     return adjacent
 

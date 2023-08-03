@@ -1,7 +1,10 @@
 from tkinter import *
 import numpy as np
 import create_adj_m
-from run_simulation import run_simulation # careful when importing - make sure there aren't any lines of code that will run
+import time
+from AntColony import AntColony
+from run_simulation import run_simulation
+# careful when importing - make sure there aren't any lines of code that will run
 
 
 class Cell:
@@ -92,7 +95,10 @@ class CellGrid(Canvas):
 
             self.grid.append(line)
 
-        # memorize the cells that have been modified to avoid many switching of state during mouse motion.
+        self.best_path_arr = []
+
+        # memorize the cells that have been modified to avoid many switching
+        # of state during mouse motion.
         self.switched = []
 
         # bind click action
@@ -102,7 +108,8 @@ class CellGrid(Canvas):
         # bind release button action - clear the memory of midified cells.
         self.bind("<ButtonRelease-1>", lambda event: self.switched.clear())
 
-        run_button = Button(self, text="Run Optimization", command=self.run_sim,anchor=W)
+        run_button = Button(self, text="Run Optimization",
+                            command=self.run_sim, anchor=W)
         run_button.configure(width=10, activebackground="#33B5E5", relief=FLAT)
         self.create_window(10, 10, anchor=NW, window=run_button)
 
@@ -135,19 +142,48 @@ class CellGrid(Canvas):
             cell.draw()
             self.switched.append(cell)
 
-    def run_sim(self):
+    def run_sim_by_step(self, n_timesteps=100):
+        locations = self.create_locations()
+        adjacency_mat = create_adj_m.create_adjacency_mat(locations)
+        colony = AntColony(locations, adjacency_mat, 0, locations.shape[0] - 1,
+                           decay=0.1, n_ants=100)
+        for t in range(n_timesteps):
+            colony.run_time_step(t)
+            if len(colony.best_path) > 0:
+                self.draw()
+                #  for loc in self.best_path_arr:
+                #     self.grid[loc[0]][loc[1]].draw()
+                #   self.best_path_arr = []
+                for idx in colony.best_path:
+                    loc = locations[idx]
+                    self.grid[loc[0]][loc[1]].fill_solution()
+                #  self.best_path_arr.append(loc)
+            self.update()
+       #     time.sleep(0.001)
+        print(colony.best_path)
+        print(colony.best_path_dist)
+        print("finished")
+
+    def create_locations(self):
         locations = []
         for i in range(len(grid.grid)):
             for j in range(len(grid.grid[i])):
                 if grid.grid[i][j].fill:
                     locations.append([i, j])
         locations = np.array(locations)
+        return locations
+
+    def run_sim(self):
+        self.draw()
+        locations = self.create_locations()
         adj_mat = create_adj_m.create_adjacency_mat(locations)
         # need to pass in locations and adj matrix
         colony = run_simulation(locations, adj_mat)
         for idx in colony.best_path:
             loc = locations[idx]
             self.grid[loc[0]][loc[1]].fill_solution()
+            self.best_path_arr.append(loc)
+
 
 
 app = Tk()
@@ -160,6 +196,3 @@ grid = CellGrid(app, nx, ny, cell_size)
 grid.pack()
 
 app.mainloop()
-
-
-

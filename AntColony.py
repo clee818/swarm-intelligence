@@ -5,13 +5,12 @@ import numpy as np
 
 class AntColony():
     def __init__(self, locations, adjacency_mat, start, end, n_ants=100,
-                 timesteps=1000, alpha=1, beta=2, decay=0.1):
+                 timesteps=1000, alpha=2, beta=2, decay=0.05):
         # initializing all variables that we will use
         self.locations = locations  # matrix of locations n rows by 2 col
         self.adjacency_mat = adjacency_mat
         self.pheromones = np.ones(
             adjacency_mat.shape)  # creating matrix of pheromones
-
         self.start = start  # starting location of ant
         self.end = end  # ending point of path ant follows
         self.n_ants = n_ants  # number of ants
@@ -20,40 +19,42 @@ class AntColony():
         self.beta = beta  # weight of distance
         self.decay = decay  # decay rate of pheromone
 
+        self.all_finished_paths = []
+        self.paths = []
+        for i in range(self.n_ants):
+            self.paths.append([self.start])
+
         self.best_path = []
         self.best_path_dist = np.inf
 
     def run(self):
-        paths = []
-        for i in range(self.n_ants):
-            paths.append([self.start])  # building path array
         for t in range(1, self.timesteps):
-            self.run_time_step(paths, t)
+            self.run_time_step(t)
             self.p_decay()
-        self.clean_best_path()
+        self.best_path = self.clean_path(self.best_path)
 
-    def clean_best_path(self):
-        for i in range(len(self.best_path)-1, -1, -1):
-            if self.best_path[i] == self.start:
-                self.best_path = self.best_path[i:]
-                break
-
+    def clean_path(self, path):
+        for i in range(len(path)-1, -1, -1):
+            if path[i] == self.start:
+                return path[i:]
 
 
-    def run_time_step(self, paths, t):
+    def run_time_step(self, t):
         for a in range(self.n_ants):
-            next_pos = self.gen_step(paths[a][t-1], paths[a])
-            paths[a].append(next_pos)
+            next_pos = self.gen_step(self.paths[a][t-1], self.paths[a])
+            self.paths[a].append(next_pos)
             if next_pos == -1:
-                paths[a] = [self.start] * len(paths[a])
+                self.paths[a] = [self.start] * len(self.paths[a])
                 continue
             if next_pos == self.end:
-                self.p_add(paths[a])
-                dist = self.get_path_distance(paths[a])
-                if (dist < self.best_path_dist):
-                    self.best_path = paths[a]
+                self.p_add(self.paths[a])
+                if not any(path == self.paths[a] for path in self.all_finished_paths):
+                    self.all_finished_paths.append(self.clean_path(self.paths[a]))
+                dist = self.get_path_distance(self.paths[a])
+                if dist < self.best_path_dist:
+                    self.best_path = np.copy(self.paths[a])
                     self.best_path_dist = dist
-                paths[a] = [self.start]*len(paths[a])
+                self.paths[a] = [self.start]*len(self.paths[a])
 
 
     def gen_step(self, position, path):
@@ -70,6 +71,9 @@ class AntColony():
 
         probs = (self.pheromones[position] ** self.alpha) * (
                     (1.0 / possible_steps) ** self.beta)
+
+        if np.sum(probs) == 0:  # if no moves left
+            return -1
 
         norm_probs = probs / probs.sum()
 
